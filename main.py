@@ -16,18 +16,19 @@ def jack_health(jackX, jackY, enemies, jackHealth):
     enemiesYMin = enemies['y']
     enemiesYMax = enemies['y'] + 48
     hit = False
-    if ((enemiesXMax > hitboxXMin and enemiesXMax < hitboxXMax) or (enemiesXMin > hitboxXMin and enemiesXMin < hitboxXMax)) and enemiesYMax>hitboxYMin:
+    if ((enemiesXMax > hitboxXMin and enemiesXMax < hitboxXMax) or (enemiesXMin > hitboxXMin and enemiesXMin < hitboxXMax)) and (enemiesYMax>hitboxYMin and enemiesYMin<hitboxYMax):
         hit = True
-        print('hit' + str(jackHealth))
-    return jackHealth - 5, hit
+        #print('hit')
+        jackHealth-=5
+    return jackHealth, hit
     
         
     
 def fist_hit(fistX, fistY, enemies):
     hitboxXMin = fistX
-    hitboxXMax = fistX + 48
+    hitboxXMax = fistX + 50
     hitboxYMin = fistY
-    hitboxYMax = fistY + 48
+    hitboxYMax = fistY + 50
     
     enemiesXMin = enemies['x']
     enemiesXMax = enemies['x'] + 48
@@ -36,15 +37,17 @@ def fist_hit(fistX, fistY, enemies):
     hit = False
     if ((enemiesXMax > hitboxXMin and enemiesXMax < hitboxXMax) or (enemiesXMin > hitboxXMin and enemiesXMin < hitboxXMax)) and enemiesYMax>hitboxYMin:
         hit = True
-        print('hit' + str(jackHealth))
-    return jackHealth - 5, hit
+        lizardHitSound.play()
+    return hit
 
 
 def lizzard_spawn(rand, enemies):
     num = random.randint(0, 100)
+    
     if num < rand:
+        
         lizzardX = random.randint(0, SCREEN_X)
-        lizzardY = 96
+        lizzardY = -96
         lizzard = {'lizzard':pygame.image.load("./lizzard.png"), 'x':lizzardX, 'y':lizzardY}
         lizzard['lizzard'] = pygame.transform.scale(lizzard['lizzard'], (48, 48))
         screen.blit(lizzard['lizzard'], (lizzard['x'], lizzard['y']))
@@ -73,19 +76,20 @@ screen.blit(jack, (jackX, jackY))
 jackHealth = 100
 
 beanstalk = pygame.image.load("./beanstalk.png")
+beanstalkY = MIDDLE_Y - 1000
 
 fist = pygame.image.load("./fist.png")
-fist = pygame.transform.scale(fist, (96, 96))
+fist = pygame.transform.scale(fist, (50, 50))
 
 enemies = []
 
-lizardHitSound = pygame.mixer.Sound(s, )
+lizardHitSound = pygame.mixer.Sound("./death.ogg")
 lizzard_a = pygame.image.load("./lizzard.png")
 lizzard_a = pygame.transform.scale(lizzard_a, (48, 48))
 lizzardX = int(SCREEN_X / 2)
-lizzardY = int(96)
+lizzardY = int(-96)
 
-###POSE TRACKING###
+###HAND TRACKING###
 capture = cv.VideoCapture(0)
 capture.set(cv.CAP_PROP_FRAME_WIDTH, 800)
 capture.set(cv.CAP_PROP_FRAME_HEIGHT, 600)
@@ -98,26 +102,37 @@ running = True
 jackMovingLeft = False
 jackMovingRight = False
 
+#Text init
+BLUE = (255, 255, 255)
+font = pygame.font.SysFont('freesansbold.tff', 72)
+text = font.render(f"Health: {str(jackHealth)}", True, BLUE)
+
+handX = 0
+handY = 0
+
+score = 0
+
+
+
 while running:
     
-    
+    '''
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             if(event.key == pygame.K_a):
                 jackMovingLeft = True
             if(event.key == pygame.K_d):
                 jackMovingRight = True
+    
 
     if(jackMovingLeft):
         jackX -=1 
         
     if(jackMovingRight):
         jackX +=1 
-            
+    '''     
     
     ###HAND TRACKING###
-    handX = 0
-    handY = 0
 
     success, img = capture.read()
     
@@ -152,13 +167,17 @@ while running:
     #GRASS
     pygame.draw.rect(screen, (0, 154, 23), pygame.Rect(0, MIDDLE_Y, SCREEN_X, SCREEN_Y))
 
-    screen.blit(beanstalk, (MIDDLE_X - 150, MIDDLE_Y - 1000))
+    screen.blit(beanstalk, (MIDDLE_X - 150, beanstalkY))
+    #beanstalkY -= 10
 
     
     screen.blit(jack, (jackX, jackY))
     screen.blit(fist, (handX, handY))
     
     
+    level = 1 + score*.1
+    
+    text = font.render(f"Health: {str(jackHealth)}", True, BLUE)
     
     enemies = lizzard_spawn(10, enemies)
     inds = []
@@ -170,10 +189,14 @@ while running:
             num = -1
         else:
             num = 1
-        enemie['x'] += num*speedX
-        enemie['y'] += speedY
-        jackHealth, hit = jack_health(jackX, jackY, enemie, jackHealth)
-        if hit:
+        enemie['x'] += num*speedX*.5
+        enemie['y'] += speedY*level*.5
+        jackHealth, hit_jack = jack_health(jackX, jackY, enemie, jackHealth)
+        hit_fist = fist_hit(handX, handY, enemie)
+        
+        score += int(hit_fist)
+        
+        if hit_fist or hit_jack:
             inds.append(ind)
         screen.blit(enemie['lizzard'], (enemie['x'], enemie['y']))
     for i in range(len(inds)-1, -1, -1):
@@ -182,7 +205,8 @@ while running:
     for i in range(len(enemies)-1, -1, -1):
         if enemies[i]['y']>SCREEN_X:
             enemies.pop(i)
-
+            
+    screen.blit(text, (20, 20))
     pygame.display.update()
     pygame.time.wait(35)
     
