@@ -1,4 +1,6 @@
+from multiprocessing.connection import wait
 from tkinter import Y
+import turtle
 import pygame
 from pygame import mixer
 import random
@@ -19,16 +21,16 @@ def jack_health(jackX, jackY, enemies, jackHealth):
     if ((enemiesXMax > hitboxXMin and enemiesXMax < hitboxXMax) or (enemiesXMin > hitboxXMin and enemiesXMin < hitboxXMax)) and (enemiesYMax>hitboxYMin and enemiesYMin<hitboxYMax):
         hit = True
         #print('hit')
-        jackHealth-=5
+        jackHealth-=10
     return jackHealth, hit
     
         
     
 def fist_hit(fistX, fistY, enemies):
     hitboxXMin = fistX
-    hitboxXMax = fistX + 50
+    hitboxXMax = fistX + 100
     hitboxYMin = fistY
-    hitboxYMax = fistY + 50
+    hitboxYMax = fistY + 100
     
     enemiesXMin = enemies['x']
     enemiesXMax = enemies['x'] + 48
@@ -69,9 +71,10 @@ MIDDLE_X = int(SCREEN_X / 2)
 MIDDLE_Y = int(SCREEN_Y / 2)
 
 jack = pygame.image.load("./jack.png")
+jack = pygame.transform.flip(jack, True, False)
 jack = pygame.transform.scale(jack, (48, 48))
 jackX = int(SCREEN_X / 2)
-jackY = int(SCREEN_Y - 96)
+jackY = int(SCREEN_Y - 200)
 screen.blit(jack, (jackX, jackY))
 jackHealth = 100
 
@@ -79,7 +82,7 @@ beanstalk = pygame.image.load("./beanstalk.png")
 beanstalkY = MIDDLE_Y - 1000
 
 fist = pygame.image.load("./fist.png")
-fist = pygame.transform.scale(fist, (50, 50))
+fist = pygame.transform.scale(fist, (100, 100))
 
 enemies = []
 
@@ -112,6 +115,13 @@ handY = 0
 
 score = 0
 
+height = 0
+
+firstRun = True
+
+story1 = pygame.image.load("./backStory1.png")
+story2 = pygame.image.load("./backStory2.png")
+story3 = pygame.image.load("./backStory3.png")
 
 
 while running:
@@ -124,14 +134,26 @@ while running:
             if(event.key == pygame.K_d):
                 jackMovingRight = True
     
-
     if(jackMovingLeft):
         jackX -=1 
         
     if(jackMovingRight):
         jackX +=1 
     '''     
+
+    if(firstRun):
+        cutsceneX = 0
+        cutsceneY = 0
+        screen.blit(story1, (cutsceneX, cutsceneY))
+        for event in pygame.event.get():
+            if(event.type !)
+
+
+
+
     
+
+
     ###HAND TRACKING###
 
     success, img = capture.read()
@@ -161,14 +183,15 @@ while running:
         break
     #############
 
+
+
     #SKY
     screen.fill((135, 206, 235))
 
     #GRASS
-    pygame.draw.rect(screen, (0, 154, 23), pygame.Rect(0, MIDDLE_Y, SCREEN_X, SCREEN_Y))
+    pygame.draw.rect(screen, (0, 154, 23), pygame.Rect(0, MIDDLE_Y + height, SCREEN_X, SCREEN_Y))
 
-    screen.blit(beanstalk, (MIDDLE_X - 150, beanstalkY))
-    #beanstalkY -= 10
+    screen.blit(beanstalk, (MIDDLE_X - 150, beanstalkY + height))
 
     
     screen.blit(jack, (jackX, jackY))
@@ -182,15 +205,15 @@ while running:
     enemies = lizzard_spawn(10, enemies)
     inds = []
     for ind, enemie in enumerate(enemies):
-        speedX = random.randint(1, 50)
-        speedY = random.randint(1, 50)
+        speedX = random.randint(1, 50)*level
+        speedY = random.randint(1, 50)*level
         rand = random.randint(0, 1)
         if rand:
             num = -1
         else:
             num = 1
-        enemie['x'] += num*speedX*.5
-        enemie['y'] += speedY*level*.5
+        enemie['x'] += num*10*.5*level
+        enemie['y'] += 10*level*.5
         jackHealth, hit_jack = jack_health(jackX, jackY, enemie, jackHealth)
         hit_fist = fist_hit(handX, handY, enemie)
         
@@ -208,7 +231,30 @@ while running:
             
     screen.blit(text, (20, 20))
     pygame.display.update()
+    height += 0.5*level
+    firstRun = False
+
+    if(height == 1020):
+        screen.fill((0, 0, 0))
+        win = font.render("YOU WIN ", True, (255, 0, 0))
+        pygame.time.wait(5000)
+        break
+
     pygame.time.wait(35)
+    
+    win = False
+    
+    if height >= 1050:
+        win = True
+        break
+    
+if win:
+    screen.fill((0, 0, 0))
+    win = font.render("YOU WIN ", True, (255, 0, 0))
+    screen.blit(win, (int(SCREEN_X/2), int(SCREEN_Y/2)))
+    pygame.display.update()
+    pygame.time.wait(100000)
+
     
 capture.release()
 cv.destroyAllWindows()
